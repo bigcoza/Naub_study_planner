@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="manifest.json">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAUB Study Planner - Plan Smart, Pass Easy</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif}
+  body{background:#f4f4f4;color:#222;padding-bottom:80px}
+  /* HEADER */
+  .header{background:#b30000;color:#fff;padding:18px 15px 12px;text-align:center;border-bottom:5px solid #000}
+  .header img{width:75px;height:75px;border-radius:50%;background:#fff;padding:3px;object-fit:contain}
+  .header h1{font-size:19px;margin-top:6px;letter-spacing:0.5px}
+  .header p{font-size:12px;opacity:0.9;margin-top:2px}
+  .motto{background:#000;color:#ffd700;font-size:11px;padding:6px;text-align:center;font-weight:bold;letter-spacing:0.5px}
+  /* CARDS */
+  .container{padding:15px}
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+  .card h2{font-size:16px;margin-bottom:8px}
+  .today-card{background:linear-gradient(135deg,#b30000,#000);color:#fff}
+  .today-card h2{color:#ffd700}
+  .today-card p{font-size:14px;line-height:1.5;margin-top:6px}
+  .today-card button{background:#ffd700;border:none;padding:10px 16px;border-radius:20px;font-weight:bold;margin-top:10px;cursor:pointer}
+  /* PROGRESS */
+  .progress-bg{background:#e0e0e0;height:12px;border-radius:20px;overflow:hidden;margin-top:8px}
+  .progress-fill{background:#0a7a42;height:100%;width:0%;transition:0.5s}
+  .stats{display:flex;gap:10px;margin-top:12px}
+  .stat{flex:1;background:#f9f9f9;border-radius:10px;padding:10px;text-align:center}
+  .stat b{font-size:18px;display:block}
+  .stat span{font-size:11px;color:#666}
+  /* FORM */
+  input,select{width:100%;padding:12px;margin-bottom:10px;border:1px solid #ddd;border-radius:10px;font-size:14px}
+  .btn{background:#b30000;color:#fff;border:none;padding:13px;width:100%;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer}
+  .btn-green{background:#0a7a42}
+  /* COURSE LIST */
+  .course{border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+  .course b{font-size:15px}
+  .course small{color:#666;display:block;margin-top:3px;line-height:1.4}
+  .badge{background:#fff3cd;color:#856404;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:bold}
+  .delete{background:#ffeeee;color:#b30000;border:none;padding:7px 10px;border-radius:8px;cursor:pointer}
+  .empty{text-align:center;color:#888;padding:20px;font-size:14px}
+  /* NAV */
+  .nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #ddd}
+  .nav a{flex:1;text-align:center;padding:12px 0;font-size:12px;text-decoration:none;color:#666}
+  .nav a.active{color:#b30000;font-weight:bold;border-top:3px solid #b30000}
+  .chat-btn{position:fixed;bottom:70px;right:15px;background:#0a7a42;color:#fff;border:none;width:55px;height:55px;border-radius:50%;font-size:22px;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer}
+    .notes-box{margin-top:10px;border-top:1px solid #eee;padding-top:8px}
+.note-item{background:#f5f5f5;padding:8px;border-radius:8px;margin:5px 0;display:flex;justify-content:space-between;align-items:center}
+.note-btn{background:#007bff;color:white;border:none;padding:7px 12px;border-radius:8px;margin-top:5px;cursor:pointer}
+.view-btn{background:#25D366;color:white;padding:5px 10px;border-radius:6px;text-decoration:none;font-size:12px}
+.del-note{background:#ff4444;color:white;border:none;padding:5px 8px;border-radius:6px;font-size:12px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="header"><img src="naub-logo.png" alt="NAUB Logo" />
+<h1>NAUB STUDY PLANNER</h1>
+<p>Plan Smart, Pass Easy</p>
+</div>
+<div class="motto">KNOWLEDGE, CREATIVITY &amp; INNOVATION FOR SELF-RELIANCE • TECHNOLOGY RACE</div>
+<div class="container"><!-- TODAY CARD -->
+<div class="card today-card">
+<h2>📚 What Should I Study Today?</h2>
+<p id="todayText">Add your first course below to get your plan for today.</p>
+<button onclick="generateToday()">Get My Plan For Today →</button></div>
+<!-- PROGRESS -->
+<div class="card">
+<h2>Your Progress</h2>
+<p style="font-size: 13px; color: #666;"><span id="doneCount">0</span> tasks done • <span id="streak">🔥 1 day streak - Keep going!</span></p>
+<div class="progress-bg">
+<div class="progress-fill" id="progressFill"></div>
+</div>
+<p style="font-size: 12px; margin-top: 6px;"><span id="progressText">0%</span> of your tasks completed</p>
+<div class="stats">
+<div class="stat"><b id="totalCourses">0</b><span>Total Courses</span></div>
+<div class="stat"><b id="totalTasks">0</b><span>Tasks Today</span></div>
+<div class="stat"><b id="daysLeft">-</b><span>Days to Next Exam</span></div>
+</div>
+</div>
+<!-- ADD COURSE - UPDATED: Added Units + Semester, No Lecturer Name -->
+<div class="card">
+<h2 id="courseSection">+ Add A Course</h2>
+<input type="text" id="code" placeholder="Course Code e.g. CSC 201" /> <input type="text" id="title" placeholder="Course Title e.g. Introduction to Programming" /> <label style="font-size: 12px; color: #666;">Course Units</label><select id="units">
+<option value="1">1 Unit</option>
+<option value="2">2 Units</option>
+<option value="3" selected="selected">3 Units</option>
+<option value="4">4 Units</option>
+<option value="5">5 Units</option>
+<option value="6">6 Units</option>
+</select><label style="font-size: 12px; color: #666;">Semester</label><select id="semester">
+<option value="First Semester">First Semester</option>
+<option value="Second Semester">Second Semester</option>
+</select><label style="font-size: 12px; color: #666;">Exam Date</label> <input type="date" id="examDate" /> <label style="font-size: 12px; color: #666;">How do you feel about this course?</label><select id="difficulty">
+<option value="Easy">I feel confident - Easy 🟢</option>
+<option value="Medium" selected="selected">I feel okay - Medium 🟡</option>
+<option value="Hard">I feel stressed - Hard 🔴</option>
+</select><button class="btn" onclick="addCourse()">Add Course &amp; Generate Timetable</button></div>
+<!-- MY COURSES -->
+<div class="card">
+<h2>📖 My Courses</h2>
+<div id="courseList"></div>
+</div>
+<!-- TODAY TASKS -->
+<div class="card">
+<h2>✅ Today's Tasks</h2>
+<div id="taskList"></div>
+<button onclick="shareTimetable()" style="width: 100%; padding: 12px; background: #25D366; color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer;">📸 Share My Timetable</button></div>
+</div>
+<p><button class="chat-btn" onclick="openChat()">💬</button></p>
+<!-- CHATBOX -->
+<div id="chatBox" style="display: none; position: fixed; bottom: 80px; right: 10px; left: 10px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 999; max-width: 400px; margin: auto; overflow: hidden;">
+<div style="background: #b30000; color: white; padding: 12px; font-weight: bold; display: flex; justify-content: space-between;">NAUB Assistant 🤖 <span onclick="closeChat()" style="cursor: pointer;">✖</span></div>
+<div id="chatMessages" style="height: 250px; overflow-y: auto; padding: 10px; font-size: 14px;"></div>
+<div style="display: flex; padding: 8px; gap: 5px;"><input id="chatInput" placeholder="Ask me... e.g How do I study?" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px;" type="text" /><button onclick="sendChat()" style="background: #b30000; color: white; border: none; padding: 10px 15px; border-radius: 20px;">Send</button></div>
+<div style="padding: 0 10px 10px; display: flex; gap: 5px; flex-wrap: wrap;"><button onclick="quickChat('How do I study for my exam?')" style="font-size: 11px; padding: 5px 8px; border-radius: 15px; border: 1px solid #ddd; background: #fff;">How to study?</button> <button onclick="quickChat('I am stressed')" style="font-size: 11px; padding: 5px 8px; border-radius: 15px; border: 1px solid #ddd; background: #fff;">I am stressed</button> <button onclick="quickChat('Motivate me')" style="font-size: 11px; padding: 5px 8px; border-radius: 15px; border: 1px solid #ddd; background: #fff;">Motivate me</button></div>
+</div>
+<!-- ENQUIRIES & REVIEWS -->
+<div class="card">
+<h2>💬 Enquiries &amp; Suggestions</h2>
+<input id="enqName" placeholder="Your Name" style="width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px;" type="text" /> <textarea id="enqMsg" placeholder="Your suggestion or question..." style="width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px;"></textarea> <button onclick="sendEnquiry()" style="width: 100%; background: #b30000; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold;">Send Enquiry</button>
+<div id="enqList" style="margin-top: 10px; font-size: 13px;"></div>
+</div>
+<div class="card">
+<h2 id="reviewSection">⭐ Reviews - <span id="reviewCount">0</span> Reviews</h2>
+<select id="revStars" style="width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px;">
+<option value="5">⭐⭐⭐⭐⭐ - Excellent</option>
+<option value="4">⭐⭐⭐⭐ - Very Good</option>
+<option value="3">⭐⭐⭐ - Good</option>
+<option value="2">⭐⭐ - Fair</option>
+<option value="1">⭐ - Poor</option>
+</select><input id="revName" placeholder="Your Name" style="width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px;" type="text" /> <textarea id="revText" placeholder="What do you think?" style="width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px;"></textarea> <button onclick="sendReview()" style="width: 100%; background: #FFC107; color: black; border: none; padding: 12px; border-radius: 8px; font-weight: bold;">Post Review</button>
+<div id="revList" style="margin-top: 10px; font-size: 13px;"></div>
+</div>
+<!-- SHARE & FOOTER -->
+<div class="card" style="text-align: center;">
+<h2>📤 Share With Your Coursemates</h2>
+<p style="font-size: 13px; color: #555;">Help a NAUB student plan smart, pass easy.</p>
+<button onclick="shareApp()" style="width: 100%; background: #25D366; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 15px;">📱 Share on WhatsApp</button> <button onclick="copyLink()" style="width: 100%; background: #f0f0f0; color: #333; border: none; padding: 12px; border-radius: 10px; font-weight: bold; margin-top: 8px;">🔗 Copy Link</button>
+<p id="copyMsg" style="font-size: 12px; color: green; display: none;">Link copied! ✅</p>
+</div>
+<div style="text-align: center; padding: 20px 10px 80px; color: #888; font-size: 12px;">Built for NAUB Students ❤️<br />NAUB Study Planner - Plan Smart, Pass Easy<br />Knowledge, Creativity &amp; Innovation for Self-Reliance</div>
+<div class="bottom-nav" style="display: flex; justify-content: space-around; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 0; border-top: 1px solid #ddd; z-index: 998;"><button onclick="window.scrollTo({top:0,behavior:'smooth'})" style="background: none; border: none; font-size: 12px;">🏠<br />Home</button> <button onclick="document.getElementById('courseSection').scrollIntoView({behavior:'smooth'})" style="background: none; border: none; font-size: 12px;">📚<br />Courses</button> <button onclick="openChat()" style="background: none; border: none; font-size: 12px;">🤖<br />Assistant</button> <button onclick="document.getElementById('reviewSection').scrollIntoView({behavior:'smooth'})" style="background: none; border: none; font-size: 12px;">⭐<br />Reviews</button></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const firebaseConfig = {
+  apiKey: "AIzaSyC2ksJ_kmr9OXP6yKErrvEzjaVqPt4qhqc",
+  authDomain: "naub-study-planner.firebaseapp.com",
+  projectId: "naub-study-planner",
+  storageBucket: "naub-study-planner.firebasestorage.app",
+  messagingSenderId: "973970572074",
+  appId: "1:973970572074:web:5444da25e39aa2b2e29453"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+let courses = JSON.parse(localStorage.getItem('naub_courses') || '[]');
+let tasks = JSON.parse(localStorage.getItem('naub_tasks') || '[]');
+
+function save(){ localStorage.setItem('naub_courses', JSON.stringify(courses)); localStorage.setItem('naub_tasks', JSON.stringify(tasks)); render(); }
+function addCourse(){
+   let code = document.getElementById('code').value.trim();
+  let title = document.getElementById('title').value.trim();
+  let units = document.getElementById('units').value;
+  let semester = document.getElementById('semester').value;
+  let examDate = document.getElementById('examDate').value;
+  let difficulty = document.getElementById('difficulty').value;
+  if(!code || !title || !examDate){ alert('Please fill Code, Title and Exam Date'); return; }
+ courses.push({code, title, units, semester, examDate, difficulty, id: Date.now()});
+ // Auto create 3 tasks for today
+ tasks.push({text: `Read Chapter 1 of ${code} - ${title}`, done:false, id: Date.now()+1});
+ tasks.push({text: `Solve 5 past questions for ${code}`, done:false, id: Date.now()+2});
+ tasks.push({text: `Revise notes for ${code} (30 mins)`, done:false, id: Date.now()+3});
+ document.getElementById('code').value='';
+ document.getElementById('title').value='';
+ document.getElementById('examDate').value='';
+ save();
+render();
+}
+
+function deleteCourse(id){ 
+  let courseToDelete = courses.find(c=>c.id===id);
+  courses = courses.filter(c=>c.id!==id); 
+  // Also delete tasks for that course
+  if(courseToDelete){
+    tasks = tasks.filter(t => !t.text.includes(courseToDelete.code));
+  }
+  save();
+render();
+}
+
+function clearAll(){
+  if(confirm('Delete all test courses and tasks?')){
+    courses = []; tasks = [];
+    localStorage.removeItem('naub_courses');
+    localStorage.removeItem('naub_tasks');
+    save();
+  }
+}
+
+function toggleTask(id){ let t = tasks.find(x=>x.id===id); if(t) t.done = !t.done; save(); }
+
+function generateToday(){
+  if(courses.length===0){ document.getElementById('todayText').innerText = 'Add a course first, then I will tell you what to study.'; return; }
+  let c = courses[0];
+  let days = Math.ceil((new Date(c.examDate) - new Date()) / (1000*60*60*24));
+  if(days < 0) days = 0;
+  document.getElementById('todayText').innerText = `Today, focus on ${c.code} - ${c.title}. You have ${days} days to exam. Study for 2 hours: 1 hour reading, 30 mins past questions, 30 mins revision. You got this!`;
+}
+
+function render(){
+  document.getElementById('totalCourses').innerText = courses.length;
+  document.getElementById('totalTasks').innerText = tasks.length;
+  let done = tasks.filter(t=>t.done).length;
+  document.getElementById('doneCount').innerText = done;
+  let pct = tasks.length ? Math.round(done/tasks.length*100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').innerText = pct + '%';
+
+  // Days to next exam
+  if(courses.length){
+    let sorted = [...courses].sort((a,b)=> new Date(a.examDate)-new Date(b.examDate));
+    let d = Math.ceil((new Date(sorted[0].examDate) - new Date())/(1000*60*60*24));
+    document.getElementById('daysLeft').innerText = d < 0 ? '0' : d;
+  }
+
+  // Course list
+  let list = document.getElementById('courseList');
+  if(courses.length===0){ list.innerHTML = '<div class="empty">No courses yet. Add your first course above 👆</div>'; }
+  else {
+    list.innerHTML = courses.map(c=>{
+      let days = Math.ceil((new Date(c.examDate) - new Date())/(1000*60*60*24));
+      return `<div class="course"><div><b>${c.code}</b> <span class="badge">${c.difficulty}</span><small>${c.title}<br>${c.units || '3'} Units | ${c.semester || 'First Semester'}<br>📅 Exam: ${c.examDate} • ⏳ ${days} days left</small></div><button class="delete" onclick="deleteCourse(${c.id})">Delete</button><div class="notes-box"><button class="note-btn" onclick="addNote(\'${c.code}\')">+ Add My Note</button><div>${notesHTML(c.code)}</div></div></div>`;
+    }).join('');
+  }
+
+  // Tasks
+  let tList = document.getElementById('taskList');
+  if(tasks.length===0){ tList.innerHTML = '<div class="empty">No tasks yet. Your tasks will appear here after you add a course.</div>'; }
+  else {
+    tList.innerHTML = tasks.map(t=>`<label style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:14px;cursor:pointer"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${t.id})" style="width:20px;height:20px"><span style="${t.done?'text-decoration:line-through;color:#888':''}">${t.text}</span></label>`).join('');
+  }
+}
+    function shareTimetable(){
+  if(courses.length === 0){
+    alert("Add a course first to share your timetable");
+    return;
+  }
+
+  let canvas = document.createElement("canvas");
+  canvas.width = 700;
+  canvas.height = 450 + (tasks.length * 45);
+  let ctx = canvas.getContext("2d");
+
+  // Background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Top red bar
+  ctx.fillStyle = "#A6192E";
+  ctx.fillRect(0, 0, canvas.width, 95);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 32px Arial";
+  ctx.fillText("NAUB STUDY PLANNER", 30, 42);
+  ctx.font = "16px Arial";
+  ctx.fillText("My Timetable for Today", 30, 70);
+
+  // Tasks
+  ctx.fillStyle = "#000000";
+  ctx.font = "bold 22px Arial";
+  let y = 135;
+  ctx.fillText("Today's Tasks:", 30, y);
+  y += 35;
+  ctx.font = "18px Arial";
+
+  if(tasks.length === 0){
+    ctx.fillText("No tasks yet. Add a course to get your plan.", 30, y);
+  } else {
+    tasks.forEach(t => {
+      let mark = t.done ? "\u2705 " : "\u2B1C ";
+
+      ctx.fillText(mark + t.text, 30, y);
+      y += 40;
+    });
+  }
+
+  // Countdown - nearest exam
+        if (courses.length > 0) {
+  let nearest = courses.slice().sort((a,b) => new Date(a.examDate) - new Date(b.examDate))[0];
+  let days = Math.ceil((new Date(nearest.examDate) - new Date()) / (1000*60*60*24));
+  if(days < 0) days = 0;
+  y += 15;
+  ctx.font = "bold 20px Arial";
+  ctx.fillStyle = "#A6192E";
+  ctx.fillText("\u23F3 " + days + " days to " + nearest.title, 30, y);
+}
+
+  // Footer - Your advertising
+  ctx.fillStyle = "#A6192E";
+  ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 16px Arial";
+  ctx.fillText("Made with NAUB Study Planner - by Big Coza", 30, canvas.height - 18);
+
+  // Download
+  let link = document.createElement("a");
+  link.download = "NAUB-Timetable.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+  alert("Your timetable image is downloaded. Post it on WhatsApp Status!");
+}
+render();
+    // --- PAGE 2: CHATBOT ---
+function openChat(){ document.getElementById('chatBox').style.display='block'; if(document.getElementById('chatMessages').innerHTML===''){ addMsg('bot','Hello! I am your NAUB Assistant 🤖. Ask me how to study, or tap a quick question below.'); } }
+function closeChat(){ document.getElementById('chatBox').style.display='none'; }
+function addMsg(who, text){ let d=document.getElementById('chatMessages'); let color = who==='bot' ? '#f0f0f0' : '#ffe0e0'; let align = who==='bot' ? 'left' : 'right'; d.innerHTML += `<div style="background:${color};padding:8px 10px;border-radius:12px;margin:5px 0;text-align:${align}">${text}</div>`; d.scrollTop = d.scrollHeight; }
+function quickChat(q){ document.getElementById('chatInput').value=q; sendChat(); }
+function sendChat(){ let input=document.getElementById('chatInput'); let q=input.value.trim().toLowerCase(); if(!q) return; addMsg('me', input.value); input.value=''; setTimeout(()=>{ let reply = getBotReply(q); addMsg('bot', reply); }, 500); }
+function getBotReply(q){
+  if(q.includes('stress') || q.includes('tired') || q.includes('scared')) return "Take a deep breath. You are doing well. Study for 25 mins, rest 5 mins. Don't try to read everything at once. You can do this! 💪";
+  if(q.includes('motivat')) return "Remember why you started. NAUB - Knowledge, Creativity & Innovation for Self-Reliance. One chapter today = one step closer to your degree. Plan Smart, Pass Easy! 🔥";
+  if(q.includes('how') && q.includes('study')) return "Best method: 1) Read your tasks for today 2) Use 25-min focus blocks 3) Solve past questions for that course 4) Revise notes at night. Add your course above and I will generate your plan!";
+  if(q.includes('timetable') || q.includes('plan')) return "Add your course with Code + Exam Date above, then tap 'Add Course & Generate Timetable'. Your tasks will appear automatically!";
+  if(q.includes('hello') || q.includes('hi')) return "Hello! How can I help you study today? 😊";
+  if(q.includes('exam')) return "For exams: Focus on past questions + your Today's Tasks. Do the hardest topic in the morning when your brain is fresh.";
+  return "Great question! For now, try: 'How do I study?', 'I am stressed', or 'Motivate me'. And don't forget to add your courses above to get your personal plan!";
+}
+
+// --- PAGE 2: ENQUIRIES & REVIEWS ---
+// --- FIREBASE REVIEWS & ENQUIRIES - LIVE FOR EVERYONE ---
+
+
+window.sendEnquiry = async function(){
+  let n = document.getElementById('enqName').value.trim();
+  let m = document.getElementById('enqMsg').value.trim();
+  if(!n || !m){ alert('Please fill Name and Message'); return; }
+  await addDoc(collection(db, "enquiries"), {name: n, text: m, time: Date.now()});
+  document.getElementById('enqName').value=''; document.getElementById('enqMsg').value='';
+  alert('Enquiry sent! Thank you');
+  loadEnquiries();
+}
+
+window.sendReview = async function(){
+  let n = document.getElementById('revName').value.trim();
+  let t = document.getElementById('revText').value.trim();
+  let s = document.getElementById('revStars').value;
+  if(!n || !t){ alert('Please fill Name and Review'); return; }
+  await addDoc(collection(db, "reviews"), {name: n, text: t, stars: s, time: Date.now()});
+  document.getElementById('revName').value=''; document.getElementById('revText').value='';
+  alert('Review posted! Thank you');
+  loadReviews();
+}
+
+async function loadEnquiries(){
+  let el = document.getElementById('enqList'); if(!el) return;
+  let snap = await getDocs(query(collection(db, "enquiries"), orderBy("time","desc")));
+  if(snap.empty){ el.innerHTML='<div style="color:#888;padding:10px">No enquiries yet. Be the first!</div>'; return; }
+  el.innerHTML = snap.docs.map(d=>{
+    let x = d.data();
+    return `<div style="background:#f9f9f9;padding:10px;border-radius:10px;margin-bottom:8px"><b>${x.name}</b><br>${x.text}</div>`;
+  }).join('');
+}
+
+async function loadReviews(){
+  let el = document.getElementById('revList'); if(!el) return;
+  let snap = await getDocs(query(collection(db, "reviews"), orderBy("time","desc")));
+    document.getElementById('reviewCount').textContent = snap.size;
+  if(snap.empty){ el.innerHTML='<div style="color:#888;padding:10px">No reviews yet. Be the first to review!</div>'; return; }
+  el.innerHTML = snap.docs.map(d=>{
+    let x = d.data();
+    let stars = "\u2B50".repeat(Number(x.stars||5));
+    return `<div style="background:#fff8e1;padding:10px;border-radius:10px;margin-bottom:8px;border:1px solid #ffe082"><b>${x.name}</b> ${stars}<br>${x.text}</div>`;
+  }).join('');
+}
+loadEnquiries(); loadReviews();
+    // --- PAGE 3: SHARE ---
+function shareApp(){
+  let text = "Try this NAUB Study Planner! It makes your timetable, tracks your progress & has a chatbot. Plan Smart, Pass Easy! 👉 " + window.location.href;
+  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+}
+function copyLink(){
+  navigator.clipboard.writeText(window.location.href).then(()=>{
+    document.getElementById('copyMsg').style.display='block';
+    setTimeout(()=>{ document.getElementById('copyMsg').style.display='none'; }, 2000);
+  });
+}
+function clearTestData(){
+  if(confirm('Clear all test enquiries and reviews?')){
+    localStorage.clear();
+    location.reload();
+  }
+}
+    // MAKE ALL FUNCTIONS VISIBLE TO BUTTONS
+window.save = save;
+window.addCourse = addCourse;
+window.deleteCourse = deleteCourse;
+    window.render = render;
+window.toggleTask = toggleTask;
+window.shareTimetable = shareTimetable;
+window.generateToday = generateToday;
+window.closeChat = closeChat;
+window.sendChat = sendChat;
+window.copyLink = copyLink;
+window.clearAll = clearAll;
+if(typeof addTask !== 'undefined') window.addTask = addTask;
+if(typeof deleteTask !== 'undefined') window.deleteTask = deleteTask;
+window.shareApp = shareApp;
+    window.clearTestData = clearTestData;
+    window.addCourse = addCourse;
+window.openChat = openChat;
+window.loadEnquiries = loadEnquiries;
+window.loadReviews = loadReviews;
+    // --- LECTURE NOTES - FIREBASE LIST, NO OVERWRITE ---
+let allNotes = [];
+
+window.addNote = async function(courseCode){
+  let name = prompt('Your Name:'); if(!name) return;
+  let title = prompt('Note Title - e.g. Lecture 1 - Intro:'); if(!title) return;
+  let link = prompt('Paste Google Drive Link:'); if(!link) return;
+  await addDoc(collection(db, "notes"), {course: courseCode, name: name, title: title, link: link, time: Date.now()});
+  alert('Note added! \u2705');
+  loadNotes();
+}
+
+window.deleteNote = async function(noteId){
+  let pass = prompt('Admin only. Enter admin password:');
+  if(pass !== 'naub123'){ alert('Wrong password ❌'); return; }
+  if(!confirm('Delete this note?')) return;
+  const { deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  await deleteDoc(doc(db, "notes", noteId));
+  loadNotes();
+}
+
+function notesHTML(courseCode){
+  let list = allNotes.filter(n => n.course === courseCode);
+  if(list.length===0) return '<p style="font-size:13px;color:#888;margin-top:6px;">No notes yet. Be the first!</p>';
+  let html = '<p style="font-weight:bold;margin:8px 0 4px;">📎 Lecture Notes ('+list.length+')</p>';
+  list.forEach(n=>{
+    html += '<div class="note-item"><div><b>'+n.title+'</b><br><small>by '+n.name+'</small></div><div><a class="view-btn" href="'+n.link+'" target="_blank">View</a> <button class="del-note" onclick="deleteNote(\''+n.docId+'\')">✕</button></div></div>';
+  });
+  return html;
+}
+
+async function loadNotes(){
+  let snap = await getDocs(query(collection(db, "notes"), orderBy("time","desc")));
+  allNotes = snap.docs.map(d=>{ let x=d.data(); x.docId=d.id; return x; });
+  render();
+}
+
+    loadNotes();
+
+// Expose module functions to HTML onclick buttons:
+if (typeof generateToday !== 'undefined') window.generateToday = generateToday;
+if (typeof addCourse !== 'undefined') window.addCourse = addCourse;
+if (typeof shareTimetable !== 'undefined') window.shareTimetable = shareTimetable;
+if (typeof toggleTask !== 'undefined') window.toggleTask = toggleTask;
+if (typeof deleteCourse !== 'undefined') window.deleteCourse = deleteCourse;
+
+</script>
+
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js?v=2');
+}
+</script>
+<script>
+// --- PLAIN SCRIPT - ALWAYS WORKS, NO FIREBASE NEEDED ---
+function shareApp(){
+  var text = "Try this NAUB Study Planner! It makes your timetable, tracks your progress & has a chatbot. Plan Smart, Pass Easy! " + window.location.href;
+  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+}
+function copyLink(){
+  var link = window.location.href;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(link).then(function(){ alert("Link Copied!"); });
+  } else {
+    prompt("Copy this link:", link);
+  }
+  var m = document.getElementById('copyMsg');
+  if(m){ m.style.display='block'; setTimeout(function(){ m.style.display='none'; },2000); }
+}
+
+function closeChat(){
+  var box = document.getElementById('chatBox');
+  if(box) box.style.display='none';
+}
+</script>
+<script>
+// --- FULL CHATBOT - PLAIN SCRIPT ---
+function addMsg(who, text){
+  var box = document.getElementById('chatMessages');
+  if(!box) return;
+  var div = document.createElement('div');
+  div.style.cssText = "padding:8px 10px;border-radius:12px;margin:5px 0;max-width:90%;";
+  if(who === 'user'){
+    div.style.background = "#ffe0e0";
+    div.style.marginLeft = "auto";
+    div.style.textAlign = "right";
+  } else {
+    div.style.background = "#f0f0f0";
+  }
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function getBotReply(q){
+  q = q.toLowerCase();
+  if(q.includes('stress') || q.includes('tired') || q.includes('scared')) return "Take a deep breath. You are doing well. Study for 25 mins, rest 5 mins. Don't try to read everything at once. You can do this! 💪";
+  if(q.includes('motivat')) return "Remember why you started. NAUB - Knowledge, Creativity & Innovation for Self-Reliance. One chapter today = one step closer to your degree. Plan Smart, Pass Easy! 🔥";
+  if(q.includes('how') && q.includes('study')) return "Best method: 1) Read your tasks for today 2) Use 25-min focus blocks 3) Solve past questions for that course 4) Revise notes at night. Add your course above and I will generate your plan!";
+  if(q.includes('timetable') || q.includes('plan')) return "Add your course with Code + Exam Date above, then tap 'Add Course & Generate Timetable'. Your tasks will appear automatically!";
+  if(q.includes('hello') || q.includes('hi')) return "Hello! How can I help you study today? 😊";
+  if(q.includes('exam')) return "For exams: Focus on past questions + your Today's Tasks. Do the hardest topic in the morning when your brain is fresh.";
+  return "Great question! For now, try: 'How do I study?', 'I am stressed', or 'Motivate me'";
+}
+
+function openChat(){
+  var box = document.getElementById('chatBox');
+  if(box) box.style.display='block';
+  var msgs = document.getElementById('chatMessages');
+  if(msgs && msgs.innerHTML.trim() === ''){
+    addMsg('bot', 'Hello! I am your NAUB Assistant 🤖. Ask me how to study, or tap a quick question below.');
+  }
+}
+
+async function sendChat(){
+  var input = document.getElementById('chatInput');
+  if(!input) return;
+  var q = input.value.trim();
+  if(!q) return;
+  addMsg('user', q);
+  input.value = '';
+
+  var today = new Date().toDateString();
+  var usage = JSON.parse(localStorage.getItem('aiUsage') || '{"date":"","count":0}');
+  if(usage.date !== today) usage = { date: today, count: 0 };
+
+  if(usage.count >= 5){
+    addMsg('bot', getBotReply(q) + " (Daily AI limit of 8 reached — try again tomorrow!)");
+    return;
+  }
+
+  addMsg('bot', 'Thinking... \u23F3');
+  var box = document.getElementById('chatMessages');
+  var thinkingBubble = box ? box.lastElementChild : null;
+
+  try {
+    var savedCourses = JSON.parse(localStorage.getItem('courses') || '[]')
+      .map(function(c){ return c.code + ' - ' + c.title; }).join(', ');
+
+    var res = await fetch('/.netlify/functions/ask-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: q, courses: savedCourses })
+    });
+
+    var data = await res.json();
+    if(res.ok && data.reply){
+      usage.count++;
+      localStorage.setItem('aiUsage', JSON.stringify(usage));
+      if(thinkingBubble) thinkingBubble.textContent = data.reply;
+    } else {
+      if(thinkingBubble) thinkingBubble.textContent = getBotReply(q);
+    }
+  } catch (err) {
+    if(thinkingBubble) thinkingBubble.textContent = getBotReply(q);
+  }
+}
+
+function quickChat(q){
+  var input = document.getElementById('chatInput');
+  if(input){ input.value = q; sendChat(); }
+}
+</script>
+</body>
+</html>
