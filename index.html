@@ -539,11 +539,11 @@ async function sendChat(){
   if(usage.date !== today) usage = { date: today, count: 0 };
 
   if(usage.count >= 5){
-    addMsg('bot', getBotReply(q) + " (Daily AI limit of 8 reached — try again tomorrow!)");
+    addMsg('bot', getBotReply(q) + " (Daily AI limit of 5 reached — try again tomorrow!)");
     return;
   }
 
-  addMsg('bot', 'Thinking... \u23F3');
+  addMsg('bot', 'Thinking... ⏳');
   var box = document.getElementById('chatMessages');
   var thinkingBubble = box ? box.lastElementChild : null;
 
@@ -557,16 +557,17 @@ async function sendChat(){
       body: JSON.stringify({ message: q, courses: savedCourses })
     });
 
-    var data = await res.json();
+    var data = await res.json().catch(function(){ return {}; });
     if(res.ok && data.reply){
       usage.count++;
       localStorage.setItem('aiUsage', JSON.stringify(usage));
       if(thinkingBubble) thinkingBubble.textContent = data.reply;
     } else {
-      if(thinkingBubble) thinkingBubble.textContent = getBotReply(q);
+      // SHOW REAL ERROR - don't hide it
+      if(thinkingBubble) thinkingBubble.textContent = "DEBUG ERROR: Status " + res.status + " - " + (data.error || JSON.stringify(data) || "No reply") + " | Offline: " + getBotReply(q);
     }
   } catch (err) {
-    if(thinkingBubble) thinkingBubble.textContent = getBotReply(q);
+    if(thinkingBubble) thinkingBubble.textContent = "DEBUG FETCH FAILED: " + err.message + " | Offline: " + getBotReply(q);
   }
 }
 
