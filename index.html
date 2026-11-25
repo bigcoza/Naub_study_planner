@@ -576,5 +576,26 @@ function quickChat(q){
   if(input){ input.value = q; sendChat(); }
 }
 </script>
+    <script>
+// --- OVERRIDE: Real AI - overrides old offline bot ---
+async function sendChat(){
+  var input = document.getElementById('chatInput');
+  if(!input) return;
+  var q = input.value.trim();
+  if(!q) return;
+  addMsg('user', q);
+  input.value = '';
+  addMsg('bot', 'Thinking... ⏳');
+  var box = document.getElementById('chatMessages');
+  var thinkingBubble = box ? box.lastElementChild : null;
+  try {
+    var savedCourses = JSON.parse(localStorage.getItem('courses') || '[]').map(function(c){ return c.code + ' - ' + c.title; }).join(', ');
+    var res = await fetch('/.netlify/functions/ask-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: q, courses: savedCourses }) });
+    var data = await res.json().catch(function(){ return {}; });
+    if(res.ok && data.reply){ if(thinkingBubble) thinkingBubble.textContent = data.reply; }
+    else { if(thinkingBubble) thinkingBubble.textContent = "DEBUG ERROR: Status " + res.status + " - " + (data.error || JSON.stringify(data)) + " | Offline: " + getBotReply(q); }
+  } catch (err) { if(thinkingBubble) thinkingBubble.textContent = "DEBUG FETCH FAILED: " + err.message + " | Offline: " + getBotReply(q); }
+}
+    </script>
 </body>
 </html>
