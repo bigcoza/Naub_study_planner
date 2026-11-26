@@ -311,21 +311,6 @@ function render(){
   alert("Your timetable image is downloaded. Post it on WhatsApp Status!");
 }
 render();
-    // --- PAGE 2: CHATBOT ---
-function openChat(){ document.getElementById('chatBox').style.display='block'; if(document.getElementById('chatMessages').innerHTML===''){ addMsg('bot','Hello! I am your NAUB Assistant 🤖. Ask me how to study, or tap a quick question below.'); } }
-function closeChat(){ document.getElementById('chatBox').style.display='none'; }
-function addMsg(who, text){ let d=document.getElementById('chatMessages'); let color = who==='bot' ? '#f0f0f0' : '#ffe0e0'; let align = who==='bot' ? 'left' : 'right'; d.innerHTML += `<div style="background:${color};padding:8px 10px;border-radius:12px;margin:5px 0;text-align:${align}">${text}</div>`; d.scrollTop = d.scrollHeight; }
-function quickChat(q){ document.getElementById('chatInput').value=q; sendChat(); }
-function sendChat(){ let input=document.getElementById('chatInput'); let q=input.value.trim().toLowerCase(); if(!q) return; addMsg('me', input.value); input.value=''; setTimeout(()=>{ let reply = getBotReply(q); addMsg('bot', reply); }, 500); }
-function getBotReply(q){
-  if(q.includes('stress') || q.includes('tired') || q.includes('scared')) return "Take a deep breath. You are doing well. Study for 25 mins, rest 5 mins. Don't try to read everything at once. You can do this! 💪";
-  if(q.includes('motivat')) return "Remember why you started. NAUB - Knowledge, Creativity & Innovation for Self-Reliance. One chapter today = one step closer to your degree. Plan Smart, Pass Easy! 🔥";
-  if(q.includes('how') && q.includes('study')) return "Best method: 1) Read your tasks for today 2) Use 25-min focus blocks 3) Solve past questions for that course 4) Revise notes at night. Add your course above and I will generate your plan!";
-  if(q.includes('timetable') || q.includes('plan')) return "Add your course with Code + Exam Date above, then tap 'Add Course & Generate Timetable'. Your tasks will appear automatically!";
-  if(q.includes('hello') || q.includes('hi')) return "Hello! How can I help you study today? 😊";
-  if(q.includes('exam')) return "For exams: Focus on past questions + your Today's Tasks. Do the hardest topic in the morning when your brain is fresh.";
-  return "Great question! For now, try: 'How do I study?', 'I am stressed', or 'Motivate me'. And don't forget to add your courses above to get your personal plan!";
-}
 
 // --- PAGE 2: ENQUIRIES & REVIEWS ---
 // --- FIREBASE REVIEWS & ENQUIRIES - LIVE FOR EVERYONE ---
@@ -576,26 +561,5 @@ function quickChat(q){
   if(input){ input.value = q; sendChat(); }
 }
 </script>
-    <script>
-// --- OVERRIDE: Real AI - overrides old offline bot ---
-async function sendChat(){
-  var input = document.getElementById('chatInput');
-  if(!input) return;
-  var q = input.value.trim();
-  if(!q) return;
-  addMsg('user', q);
-  input.value = '';
-  addMsg('bot', 'Thinking... ⏳');
-  var box = document.getElementById('chatMessages');
-  var thinkingBubble = box ? box.lastElementChild : null;
-  try {
-    var savedCourses = JSON.parse(localStorage.getItem('courses') || '[]').map(function(c){ return c.code + ' - ' + c.title; }).join(', ');
-    var res = await fetch('/.netlify/functions/ask-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: q, courses: savedCourses }) });
-    var data = await res.json().catch(function(){ return {}; });
-    if(res.ok && data.reply){ if(thinkingBubble) thinkingBubble.textContent = data.reply; }
-    else { if(thinkingBubble) thinkingBubble.textContent = "DEBUG ERROR: Status " + res.status + " - " + (data.error || JSON.stringify(data)) + " | Offline: " + getBotReply(q); }
-  } catch (err) { if(thinkingBubble) thinkingBubble.textContent = "DEBUG FETCH FAILED: " + err.message + " | Offline: " + getBotReply(q); }
-}
-    </script>
 </body>
 </html>
