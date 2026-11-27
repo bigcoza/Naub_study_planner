@@ -15,7 +15,7 @@ exports.handler = async (event) => {
     }
     const prompt = `You are the NAUB Study Assistant for Nigerian Army University Biu (NAUB) students. Give clear, concise, encouraging academic explanations and study advice (keep answers under 150 words unless asked for details). Student's registered courses: ${courses}.\n\nStudent question: ${message}`;
     const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + apiKey,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
