@@ -15,43 +15,41 @@ exports.handler = async (event) => {
     }
     const prompt = `You are the NAUB Study Assistant for Nigerian Army University Biu (NAUB) students. Give clear, concise, encouraging academic explanations and study advice (keep answers under 150 words unless asked for details). Student's registered courses: ${courses}.\n\nStudent question: ${message}`;
 
-    const MODELS = [
-      "gemini-3.8-flash",
-      "gemini-3-flash",
-      "gemini-2.5-flash"
-    ];
+    const MODELS = ["gemini-3.8-flash", "gemini-2.5-flash"];
 
-    let lastError = "Gemini error";
-
-    for (const model of MODELS) {
+    async function tryModel(model) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000); // give up after 8s
       try {
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            signal: controller.signal
           }
         );
+        clearTimeout(timeout);
         const data = await res.json();
         if (res.ok) {
-          const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate an answer right now. Try rephrasing!";
-          return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply }) };
+          return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
         }
-        lastError = data?.error?.message || `Status ${res.status}`;
-        // 503 = busy, 429 = too many requests, 404 = model retired -> try next model
-        if (res.status === 503 || res.status === 429 || res.status === 404) {
-          continue;
-        } else {
-          break;
-        }
+        return null;
       } catch (e) {
-        lastError = String(e);
-        continue;
+        clearTimeout(timeout);
+        return null;
       }
     }
 
-    return { statusCode: 503, body: JSON.stringify({ error: "AI is busy right now, please try again. " + lastError }) };
+    for (const model of MODELS) {
+      const reply = await tryModel(model);
+      if (reply) {
+        return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply }) };
+      }
+    }
+
+    return { statusCode: 503, body: JSON.stringify({ error: "AI is busy right now, please try again in 10 seconds." }) };
 
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: "Server error: " + String(err) }) };
